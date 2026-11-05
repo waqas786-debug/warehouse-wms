@@ -1,0 +1,55 @@
+﻿{% extends 'base.html' %}
+{% block title %}Outbound Orders - WMS{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Customer Outbound Orders</h3>
+    <a href="{{ url_for('outbound.create_order') }}" class="btn btn-primary">+ Create New Order</a>
+</div>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Order #</th>
+                    <th>Customer / Company</th>
+                    <th>Product & Qty</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Fulfillment</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td><strong>{{ order.order_number }}</strong></td>
+                    <td>{{ order.client.company_name }} <br><small class="text-muted">{{ order.client.client_name }}</small></td>
+                    <td>
+                        {% if order.items %}
+                            {{ order.items[0].product.name }} (<strong>{{ order.items[0].quantity_requested }}</strong> units)
+                        {% endif %}
+                    </td>
+                    <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <span class="badge bg-{{ 'success' if order.order_status == 'Dispatched' else 'warning text-dark' }}">{{ order.order_status }}</span>
+                    </td>
+                    <td>
+                        {% if order.order_status != 'Dispatched' %}
+                        <form method="POST" action="{{ url_for('outbound.fulfill_order', order_id=order.id) }}" style="display:inline;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                            <button type="submit" class="btn btn-sm btn-outline-success">Pick & Dispatch</button>
+                        </form>
+                        {% else %}
+                        <span class="text-success small fw-bold">✓ Dispatched</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">No customer orders recorded.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

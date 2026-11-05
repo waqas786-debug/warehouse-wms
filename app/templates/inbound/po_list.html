@@ -1,0 +1,48 @@
+﻿{% extends 'base.html' %}
+{% block title %}Purchase Orders - WMS{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Inbound Purchase Orders (PO)</h3>
+    <a href="{{ url_for('inbound.create_po') }}" class="btn btn-primary">+ Generate New PO</a>
+</div>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>PO Number</th>
+                    <th>Supplier</th>
+                    <th>Destination Facility</th>
+                    <th>Ordered Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td><strong>{{ order.po_number }}</strong></td>
+                    <td>{{ order.supplier.name }}</td>
+                    <td>{{ order.warehouse.code }}</td>
+                    <td>{{ order.order_date.strftime('%Y-%m-%d') }}</td>
+                    <td>
+                        <span class="badge bg-{{ 'success' if order.status == 'Received' else 'primary' }}">{{ order.status }}</span>
+                    </td>
+                    <td>
+                        {% if order.status != 'Received' %}
+                        <a href="{{ url_for('inbound.receive_po', po_id=order.id) }}" class="btn btn-sm btn-outline-success">Receive Goods (GRN)</a>
+                        {% else %}
+                        <span class="text-muted small">Completed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">No purchase orders found. Create your first PO.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

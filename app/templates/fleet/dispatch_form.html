@@ -1,0 +1,38 @@
+﻿{% extends 'base.html' %}
+{% block title %}Dispatch Shipment - WMS{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-primary text-white py-3">
+                <h5 class="mb-0">Generate Outbound Dispatch Manifest</h5>
+            </div>
+            <div class="card-body p-4">
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="mb-3">
+                        {{ form.order_id.label(class="form-label") }}
+                        {{ form.order_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.carrier_id.label(class="form-label") }}
+                        {{ form.carrier_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.vehicle_id.label(class="form-label") }}
+                        {{ form.vehicle_id(class="form-select") }}
+                    </div>
+                    <div class="mb-3">
+                        {{ form.tracking_number.label(class="form-label") }}
+                        {{ form.tracking_number(class="form-control", placeholder="TRK-990021") }}
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('fleet.shipment_list') }}" class="btn btn-outline-secondary">Cancel</a>
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

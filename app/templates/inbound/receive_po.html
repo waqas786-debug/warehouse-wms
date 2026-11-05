@@ -1,0 +1,40 @@
+﻿{% extends 'base.html' %}
+{% block title %}Receive Goods - WMS{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-success text-white py-3">
+                <h5 class="mb-0">Inbound Receiving (GRN) — {{ po.po_number }}</h5>
+            </div>
+            <div class="card-body p-4">
+                <div class="alert alert-secondary mb-3">
+                    <strong>Product:</strong> {{ po_item.product.name }} (<code>{{ po_item.product.sku }}</code>)<br>
+                    <strong>Ordered Quantity:</strong> {{ po_item.quantity_ordered }} Units
+                </div>
+                <form method="POST" novalidate>
+                    {{ form.hidden_tag() }}
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            {{ form.quantity_received.label(class="form-label") }}
+                            {{ form.quantity_received(class="form-control", value=po_item.quantity_ordered) }}
+                        </div>
+                        <div class="col-md-6">
+                            {{ form.quantity_rejected.label(class="form-label") }}
+                            {{ form.quantity_rejected(class="form-control", value=0) }}
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        {{ form.destination_bin_id.label(class="form-label") }}
+                        {{ form.destination_bin_id(class="form-select") }}
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('inbound.po_list') }}" class="btn btn-outline-secondary">Back</a>
+                        {{ form.submit(class="btn btn-success") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

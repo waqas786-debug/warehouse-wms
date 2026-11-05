@@ -1,0 +1,40 @@
+﻿{% extends 'base.html' %}
+{% block title %}Suppliers - WMS{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Registered Suppliers</h3>
+    <a href="{{ url_for('inbound.create_supplier') }}" class="btn btn-primary">+ Add New Supplier</a>
+</div>
+<div class="card shadow-sm border-0">
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th>Code</th>
+                    <th>Supplier Name</th>
+                    <th>Contact Person</th>
+                    <th>Email</th>
+                    <th>Phone</th>
+                    <th>Tax NTN</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in suppliers %}
+                <tr>
+                    <td><code>{{ s.code }}</code></td>
+                    <td><strong>{{ s.name }}</strong></td>
+                    <td>{{ s.contact_person }}</td>
+                    <td>{{ s.email }}</td>
+                    <td>{{ s.phone }}</td>
+                    <td>{{ s.tax_number or 'N/A' }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">No suppliers found.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

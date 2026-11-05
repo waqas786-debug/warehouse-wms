@@ -1,0 +1,94 @@
+﻿{% extends 'base.html' %}
+{% block title %}Fleet & Logistics - WMS{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Fleet Logistics & Dispatched Shipments</h3>
+    <a href="{{ url_for('fleet.dispatch_order') }}" class="btn btn-primary">+ Dispatch Shipment</a>
+</div>
+
+<div class="card shadow-sm border-0 mb-4">
+    <div class="card-header bg-dark text-white py-2">
+        <h6 class="mb-0">Active Cargo Consignments</h6>
+    </div>
+    <div class="card-body p-0">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Tracking #</th>
+                    <th>Sales Order #</th>
+                    <th>Courier Carrier</th>
+                    <th>Dispatched Time</th>
+                    <th>Delivery Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sh in shipments %}
+                <tr>
+                    <td><code>{{ sh.tracking_number }}</code></td>
+                    <td><strong>{{ sh.order.order_number }}</strong></td>
+                    <td>{{ sh.carrier.name }}</td>
+                    <td>{{ sh.dispatched_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>
+                        {% if sh.pod %}
+                            <span class="badge bg-success">{{ sh.pod.status }} ({{ sh.pod.recipient_name }})</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">In-Transit</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if not sh.pod %}
+                        <a href="{{ url_for('fleet.confirm_pod', shipment_id=sh.id) }}" class="btn btn-sm btn-outline-success">Log POD</a>
+                        {% else %}
+                        <span class="text-muted small">Closed</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" class="text-center py-4 text-muted">No cargo consignments currently in transit.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white py-2">
+                <h6 class="mb-0">Registered Courier Partners</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for c in carriers %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ c.name }}</strong> <br><small class="text-muted">{{ c.service_type }}</small>
+                    </div>
+                    <span class="badge bg-light text-dark border">{{ c.contact_number }}</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-secondary text-white py-2">
+                <h6 class="mb-0">Warehouse Delivery Fleet</h6>
+            </div>
+            <ul class="list-group list-group-flush">
+                {% for v in vehicles %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ v.vehicle_number }}</strong> ({{ v.model }})<br>
+                        <small class="text-muted">Driver: {{ v.driver_name }} ({{ v.driver_phone }})</small>
+                    </div>
+                    <span class="badge bg-success">Active</span>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
