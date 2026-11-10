@@ -5,17 +5,21 @@ from app.models.auth import Role, User, StaffProfile
 from app.models.facility import Warehouse, Zone, Aisle, Rack, Shelf, StorageBin
 from app.models.catalog import ProductCategory, UnitOfMeasure, Product
 from app.models.inventory import BinStock
+from app.models.outbound import Client
 
 app = create_app()
 
 with app.app_context():
-    print("Initializing database and creating all 42 tables...")
+    print("Initializing database and verifying tables...")
     db.create_all()
 
     table_count = len(db.metadata.tables.keys())
     print(f"Total Registered Tables: {table_count}")
 
-    if not Role.query.first():
+    # -------------------------------------------------------------
+    # 1. CORE WMS SETUP (If fresh database)
+    # -------------------------------------------------------------
+    if not Role.query.filter_by(name='Administrator').first():
         # Roles & Admin User
         admin_role = Role(name='Administrator', description='Full system access')
         db.session.add(admin_role)
@@ -80,8 +84,44 @@ with app.app_context():
         stock1 = BinStock(bin_id=bin1.id, product_id=p1.id, quantity_on_hand=50, quantity_reserved=5)
         stock2 = BinStock(bin_id=bin2.id, product_id=p2.id, quantity_on_hand=120, quantity_reserved=0)
         db.session.add_all([stock1, stock2])
-
         db.session.commit()
-        print("Database seeded with sample records successfully.")
-    else:
-        print("Database already contains records.")
+        print("Base warehouse data seeded successfully.")
+
+    # -------------------------------------------------------------
+    # 2. CLIENT ROLE & CUSTOMER PORTAL SEEDING
+    # -------------------------------------------------------------
+    client_role = Role.query.filter_by(name='Client').first()
+    if not client_role:
+        client_role = Role(name='Client', description='External customer / client access')
+        db.session.add(client_role)
+        db.session.flush()
+        print("Created Role: Client")
+
+    demo_client = Client.query.filter_by(email='customer1@enterprise.com').first()
+    if not demo_client:
+        demo_client = Client(
+            company_name="Alpha Retailers Ltd",
+            contact_name="Customer One",
+            email="customer1@enterprise.com",
+            phone="+923001234567",
+            address="Commercial Market, Lahore",
+            is_active=True
+        )
+        db.session.add(demo_client)
+        db.session.flush()
+        print("Created Client record: Alpha Retailers Ltd")
+
+    customer_user = User.query.filter_by(username='customer1').first()
+    if not customer_user:
+        customer_user = User(
+            role_id=client_role.id,
+            username='customer1',
+            email='customer1@enterprise.com',
+            password_hash=generate_password_hash('customer123'),
+            is_active=True
+        )
+        db.session.add(customer_user)
+        print("Created User: customer1 (Password: customer123)")
+
+    db.session.commit()
+    print("Database seeding completed successfully.")

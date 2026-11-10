@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="fw-bold">Client Portal</h2>
+            <p class="text-muted mb-0">Logged in as: <strong>{{ current_user.username }}</strong> ({{ current_user.email }})</p>
+        </div>
+        <a href="{{ url_for('portal.create_order') }}" class="btn btn-primary shadow-sm">+ Place New Order</a>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-dark text-white fw-semibold d-flex justify-content-between align-items-center">
+            <span>My Active & Dispatched Orders</span>
+            <span class="badge bg-secondary">{{ orders|length }} Total Orders</span>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order #</th>
+                            <th>Date</th>
+                            <th>Shipping Address</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for o in orders %}
+                        <tr>
+                            <td class="fw-bold text-primary">{{ o.order_number }}</td>
+                            <td>{{ o.order_date.strftime('%Y-%m-%d %H:%M') if o.order_date else '-' }}</td>
+                            <td>{{ o.shipping_address or 'Standard Delivery' }}</td>
+                            <td>
+                                {% if o.order_status == 'PENDING' %}
+                                    <span class="badge bg-warning text-dark">Pending Warehouse Pick</span>
+                                {% elif o.order_status == 'ALLOCATED' %}
+                                    <span class="badge bg-info text-dark">Allocated</span>
+                                {% elif o.order_status == 'DISPATCHED' %}
+                                    <span class="badge bg-success">Dispatched / In-Transit</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">{{ o.order_status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="text-center py-5 text-muted">
+                                <p class="mb-2">No orders placed yet.</p>
+                                <a href="{{ url_for('portal.create_order') }}" class="btn btn-sm btn-outline-primary">Create Your First Order</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

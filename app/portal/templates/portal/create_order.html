@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary text-white fw-semibold">
+                    Place Customer Warehouse Order
+                </div>
+                <div class="card-body p-4">
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Select Catalog SKU</label>
+                            <select name="product_id" class="form-select" required>
+                                {% for p in products %}
+                                    <option value="{{ p.id }}">{{ p.sku }} - {{ p.name }} ({{ p.category.name if p.category else 'General' }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Order Quantity</label>
+                            <input type="number" name="quantity" class="form-control" value="5" min="1" max="1000" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Destination / Shipping Address</label>
+                            <textarea name="shipping_address" class="form-control" rows="3" placeholder="Enter delivery street address, city..." required>Commercial Outlet #4, Main Market, Lahore</textarea>
+                        </div>
+
+                        <div class="d-flex justify-content-between">
+                            <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline-secondary">Back to Orders</a>
+                            <button type="submit" class="btn btn-success px-4">Submit Order to Warehouse</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
