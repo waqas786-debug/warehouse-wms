@@ -73,7 +73,7 @@ def create_po():
             po = PurchaseOrder(
                 supplier_id=form.supplier_id.data,
                 warehouse_id=form.warehouse_id.data,
-                po_number=form.po_number.data,
+                po_number=(form.po_number.data.strip() if getattr(form, 'po_number', None) and form.po_number.data else f'PO-20261111-3802'),
                 status='Approved'
             )
             db.session.add(po)

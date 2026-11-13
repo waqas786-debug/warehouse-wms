@@ -1,5 +1,6 @@
 ﻿from functools import wraps
 from flask import Blueprint, render_template, redirect, url_for, flash, session
+from sqlalchemy import func
 from app.extensions import db
 from app.models.facility import StorageBin, Warehouse
 from app.models.catalog import Product
@@ -22,9 +23,9 @@ def login_required(f):
 def dashboard():
     total_products = Product.query.count()
     total_warehouses = Warehouse.query.count()
-    low_stock_items = db.session.query(Product).join(BinStock).filter(
-        BinStock.quantity_on_hand <= Product.reorder_threshold
-    ).distinct().count()
+    low_stock_items = db.session.query(Product).outerjoin(BinStock).group_by(Product.id).having(
+        func.coalesce(func.sum(BinStock.quantity_on_hand), 0) <= Product.reorder_threshold
+    ).count()
 
     recent_adjustments = StockAdjustment.query.order_by(
         StockAdjustment.created_at.desc()

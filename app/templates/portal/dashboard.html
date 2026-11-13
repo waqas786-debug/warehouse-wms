@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Portal - Warehouse WMS</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="/portal/dashboard">Warehouse WMS | Client Portal</a>
+            <div class="d-flex align-items-center">
+                <span class="text-white-50 me-3">Logged in as: <strong class="text-white">{{ session.get('username') }}</strong></span>
+                <a href="/auth/logout" class="btn btn-outline-danger btn-sm">Sign Out</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, msg in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ msg }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold mb-0">My Customer Orders</h3>
+                <small class="text-muted">Live dispatch tracking & replenishment</small>
+            </div>
+            <a href="/portal/order/new" class="btn btn-primary px-3 shadow-sm">+ Place New Order</a>
+        </div>
+
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">Recent Dispatches</h6>
+                <span class="badge bg-primary">{{ orders|length }} Total Placed</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+    <thead class="table-light">
+        <tr>
+            <th class="ps-3">Order &amp; Items</th>
+            <th>Order Date</th>
+            <th>Live Tracking Status</th>
+            <th>Courier &amp; Tracking #</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for o in orders %}
+        {% set st = (o.order_status or '').upper() %}
+        {% set ship = o.shipments[0] if o.shipments else none %}
+        {% set pod = ship.pod if (ship and ship.pod) else none %}
+        {% set step = 4 if (st == 'COMPLETED' or (pod and pod.status == 'Delivered')) else (3 if ship else (2 if st == 'DISPATCHED' else 1)) %}
+        <tr>
+            <td class="ps-3">
+                <div class="fw-bold text-primary">{{ o.order_number }}</div>
+                {% if o.items %}
+                <small class="text-muted">{{ o.items[0].product.name }} &times; {{ o.items[0].quantity_requested }}</small>
+                {% endif %}
+            </td>
+            <td>{{ o.order_date.strftime('%Y-%m-%d %H:%M') if o.order_date else '-' }}</td>
+            <td style="min-width: 260px;">
+                {% if step == 4 %}
+                    <span class="badge bg-success mb-1">Delivered</span>
+                {% elif step == 3 %}
+                    <span class="badge bg-primary mb-1">In-Transit (Fleet Assigned)</span>
+                {% elif step == 2 %}
+                    <span class="badge bg-info text-dark mb-1">Picked &amp; Dispatched</span>
+                {% else %}
+                    <span class="badge bg-warning text-dark mb-1">Order Placed / Pending Pick</span>
+                {% endif %}
+                <div class="progress" style="height: 6px;">
+                    <div class="progress-bar {{ 'bg-success' if step == 4 else 'bg-primary' }}" style="width: {{ step * 25 }}%"></div>
+                </div>
+                <div class="d-flex justify-content-between text-muted mt-1" style="font-size: 0.7rem;">
+                    <span class="{{ 'fw-bold text-dark' if step >= 1 }}">1. Placed</span>
+                    <span class="{{ 'fw-bold text-dark' if step >= 2 }}">2. Picked</span>
+                    <span class="{{ 'fw-bold text-dark' if step >= 3 }}">3. Transit</span>
+                    <span class="{{ 'fw-bold text-success' if step >= 4 }}">4. Delivered</span>
+                </div>
+            </td>
+            <td>
+                {% if ship %}
+                    <div class="small fw-bold">Tracking: <span class="text-dark">{{ ship.tracking_number }}</span></div>
+                    <div class="small text-muted">Carrier: {{ ship.carrier.name if ship.carrier else 'Assigned' }}</div>
+                    {% if pod %}
+                    <div class="small text-success fw-bold mt-1">&#10003; Received by {{ pod.recipient_name }} ({{ pod.delivered_at.strftime('%Y-%m-%d %H:%M') if pod.delivered_at else '' }})</div>
+                    {% endif %}
+                {% else %}
+                    <span class="text-muted small">Awaiting carrier assignment</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="4" class="text-center py-5 text-muted">
+                <p class="mb-2">No active orders placed yet.</p>
+                <a href="/portal/order/new" class="btn btn-outline-primary btn-sm">+ Place Your First Order</a>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,72 +1,83 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, session
 from app.extensions import db
-from app.models.models import CustomerOrder, OrderItem, Product, Client
+from app.models.outbound import CustomerOrder, OrderItem, Client
+from app.models.catalog import Product
 from app.models.auth import User
 from datetime import datetime
 
-portal_bp = Blueprint('portal', __name__)
+portal_bp = Blueprint("portal", __name__)
 
-@portal_bp.route('/dashboard')
-def dashboard():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
-
-    user = User.query.get(session['user_id'])
-    client = Client.query.filter_by(email=user.email).first() if user else None
-    
-    orders = []
-    if client:
-        orders = CustomerOrder.query.filter_by(client_id=client.id).order_by(CustomerOrder.order_date.desc()).all()
-    elif user:
-        # Fallback agar client record alag se na mila ho toh generic first client check karein
-        client = Client.query.first()
+def get_or_create_client(user):
+    # 1. Search by email if user has one
+    if user and user.email:
+        client = Client.query.filter_by(email=user.email).first()
         if client:
-            orders = CustomerOrder.query.filter_by(client_id=client.id).order_by(CustomerOrder.order_date.desc()).all()
+            return client
 
-    return render_template('portal/dashboard.html', orders=orders, client=client)
+    # 2. Get first client if any exists
+    client = Client.query.first()
+    if client:
+        return client
 
-@portal_bp.route('/order/new', methods=['GET', 'POST'])
+    # 3. Create default client with exact schema fields
+    client = Client(
+        client_name=user.username if user else "Customer One",
+        company_name="Alpha Retailers Ltd",
+        email=user.email if (user and user.email) else "customer1@enterprise.com",
+        phone="+923001234567",
+        billing_address="Commercial Market, Lahore"
+    )
+    db.session.add(client)
+    db.session.commit()
+    return client
+
+@portal_bp.route("/dashboard")
+def dashboard():
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
+
+    user = User.query.get(session["user_id"])
+    client = get_or_create_client(user)
+
+    orders = CustomerOrder.query.filter_by(client_id=client.id).order_by(CustomerOrder.id.desc()).all()
+    return render_template("portal/dashboard.html", orders=orders, client=client)
+
+@portal_bp.route("/order/new", methods=["GET", "POST"])
 def create_order():
-    if 'user_id' not in session:
-        return redirect(url_for('auth.login'))
+    if "user_id" not in session:
+        return redirect(url_for("auth.login"))
 
-    user = User.query.get(session['user_id'])
-    client = Client.query.filter_by(email=user.email).first() if user else None
-    if not client:
-        client = Client.query.first()
+    user = User.query.get(session["user_id"])
+    client = get_or_create_client(user)
+    products = Product.query.all()
 
-    products = Product.query.filter_by(is_active=True).all()
-    
-    if request.method == 'POST':
-        product_id = request.form.get('product_id')
-        qty = int(request.form.get('quantity', 1))
-        shipping_addr = request.form.get('shipping_address')
+    if request.method == "POST":
+        product_id = request.form.get("product_id")
+        qty = int(request.form.get("quantity", 1))
 
-        product = Product.query.get(product_id)
-        unit_price = 1500.0
+        order_no = f"ORD-{datetime.utcnow().strftime('%y%m%d%H%M%S')}"
 
+        # 1. Create Order with non-null client_id
         new_order = CustomerOrder(
-            order_number=f"ORD-{datetime.utcnow().strftime('%y%m%d%H%M')}",
-            client_id=client.id if client else None,
-            order_status='PENDING',
-            payment_status='UNPAID',
-            shipping_address=shipping_addr,
+            order_number=order_no,
+            client_id=client.id,
+            order_status="PENDING",
             order_date=datetime.utcnow()
         )
         db.session.add(new_order)
-        db.session.flush()
+        db.session.commit()
 
+        # 2. Create Order Item
         item = OrderItem(
             order_id=new_order.id,
-            product_id=product.id if product else product_id,
-            quantity=qty,
-            unit_price=unit_price,
-            line_total=unit_price * qty
+            product_id=int(product_id),
+            quantity_requested=qty,
+            unit_price=1500.0
         )
         db.session.add(item)
         db.session.commit()
-        
-        flash('Order successfully placed! Warehouse team will process it shortly.', 'success')
-        return redirect(url_for('portal.dashboard'))
 
-    return render_template('portal/create_order.html', products=products)
+        flash(f"Order {order_no} placed successfully! Warehouse dispatch team notified.", "success")
+        return redirect(url_for("portal.dashboard"))
+
+    return render_template("portal/create_order.html", products=products)

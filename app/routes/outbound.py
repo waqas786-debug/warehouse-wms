@@ -113,7 +113,8 @@ def fulfill_order(order_id):
         order.order_status = 'Dispatched'
 
         db.session.commit()
-        flash(f'Order {order.order_number} picked and dispatched! {item.quantity_requested} units deducted from bin.', 'success')
+        flash(f'Order {order.order_number} picked and dispatched! Now assign a vehicle & carrier below.', 'success')
+        return redirect(url_for('fleet.dispatch_order'))
     except Exception as e:
         db.session.rollback()
         flash(f'Error fulfilling order: {str(e)}', 'danger')

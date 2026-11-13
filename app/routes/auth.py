@@ -1,4 +1,4 @@
-﻿from flask import Blueprint, render_template, redirect, url_for, flash, session
+from flask import Blueprint, render_template, redirect, url_for, flash, session
 from werkzeug.security import check_password_hash
 from app.models.auth import User
 from app.forms.auth_forms import LoginForm
@@ -8,6 +8,9 @@ auth_bp = Blueprint('auth', __name__)
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
     if 'user_id' in session:
+        user_role = (session.get('role') or '').lower()
+        if user_role == 'client':
+            return redirect(url_for('portal.dashboard'))
         return redirect(url_for('inventory.dashboard'))
 
     form = LoginForm()
@@ -23,9 +26,15 @@ def login():
 
             session['user_id'] = user.id
             session['username'] = user.username
-            session['role'] = user.role.name
+            role_name = user.role.name if user.role else 'Client'
+            session['role'] = role_name
+
             flash(f'Welcome back, {user.username}!', 'success')
-            return redirect(url_for('inventory.dashboard'))
+
+            if role_name.lower() == 'client':
+                return redirect(url_for('portal.dashboard'))
+            else:
+                return redirect(url_for('inventory.dashboard'))
 
         flash('Invalid username or password.', 'danger')
 

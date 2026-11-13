@@ -1,4 +1,4 @@
-﻿from flask import Flask, redirect, url_for
+from flask import Flask, redirect, url_for
 from app.extensions import db, migrate, csrf
 from config import DevelopmentConfig
 
@@ -17,12 +17,14 @@ def create_app(config_class=DevelopmentConfig):
     from app.routes.inbound import inbound_bp
     from app.routes.outbound import outbound_bp
     from app.routes.fleet import fleet_bp
+    from app.routes.portal import portal_bp
 
     flask_app.register_blueprint(auth_bp, url_prefix='/auth')
     flask_app.register_blueprint(inventory_bp, url_prefix='/inventory')
     flask_app.register_blueprint(inbound_bp, url_prefix='/inbound')
     flask_app.register_blueprint(outbound_bp, url_prefix='/outbound')
     flask_app.register_blueprint(fleet_bp, url_prefix='/fleet')
+    flask_app.register_blueprint(portal_bp, url_prefix='/portal')
 
     @flask_app.route('/')
     def root():
