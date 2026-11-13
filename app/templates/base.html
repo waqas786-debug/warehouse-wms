@@ -3,39 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Warehouse WMS{% endblock %}</title>
+    <title>{% block title %}{{ brand.company_name }} {{ brand.company_tagline }}{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         :root { --accent: #e85d3f; --accent-soft: #fff1ed; --bg-canvas: #f7f8fa; --border-light: #e6e8ec; }
         body { min-height: 100vh; overflow-x: hidden; background-color: var(--bg-canvas); font-family: 'Segoe UI', system-ui, sans-serif; color: #1f2937; }
-        .sidebar { width: 245px; min-height: 100vh; background-color: #ffffff; border-right: 1px solid var(--border-light); flex-shrink: 0; }
-        .brand-mark { width: 30px; height: 30px; background: var(--accent); color: #fff; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.95rem; }
-        .sidebar .nav-link { color: #64748b; padding: 10px 14px; border-radius: 10px; margin-bottom: 4px; font-size: 0.9rem; font-weight: 500; transition: all 0.15s; }
+        .sidebar { width: 255px; min-height: 100vh; background-color: #ffffff; border-right: 1px solid var(--border-light); flex-shrink: 0; }
+        .brand-mark { width: 32px; height: 32px; background: var(--accent); color: #fff; border-radius: 9px; display: inline-flex; align-items: center; justify-content: center; font-weight: 800; }
+        .sidebar .nav-link { color: #64748b; padding: 10px 14px; border-radius: 10px; margin-bottom: 5px; font-size: 0.9rem; font-weight: 500; transition: all 0.15s; }
         .sidebar .nav-link:hover { color: #111827; background-color: #f3f4f6; }
+        .sidebar .nav-link.active { color: var(--accent) !important; background-color: var(--accent-soft) !important; font-weight: 600; border-left: 3px solid var(--accent); }
+        .back-sidebar-btn { background: #fff1ed; border: 1px solid #ffd5cb; color: #e85d3f; border-radius: 10px; padding: 9px 12px; font-size: 0.86rem; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 8px; transition: all 0.15s; }
+        .back-sidebar-btn:hover { background: #e85d3f; color: #ffffff; }
         .topbar { background-color: #ffffff; border-bottom: 1px solid var(--border-light); padding: 12px 28px; }
         .search-box { background: #f3f4f6; border-radius: 10px; padding: 6px 14px; width: 310px; }
         .search-box input { border: none; outline: none; background: transparent; width: 100%; font-size: 0.88rem; }
-        .wms-card { background: #ffffff; border-radius: 16px; border: 1px solid var(--border-light); box-shadow: 0 1px 3px rgba(16,24,40,0.03); }
-        .btn-accent { background-color: var(--accent); color: #fff; border: none; }
-        .btn-accent:hover { background-color: #d14d30; color: #fff; }
+        .wms-card, .card { background: #ffffff; border-radius: 16px !important; border: 1px solid var(--border-light) !important; box-shadow: 0 1px 3px rgba(16,24,40,0.03) !important; }
+        .card-header { background: #ffffff !important; border-bottom: 1px solid var(--border-light) !important; border-top-left-radius: 16px !important; border-top-right-radius: 16px !important; font-weight: 700; color: #1f2937 !important; }
+        .btn-accent, .btn-primary { background-color: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; border-radius: 10px; }
+        .btn-accent:hover, .btn-primary:hover { background-color: #d14d30 !important; border-color: #d14d30 !important; }
     </style>
 </head>
 <body>
 <div class="d-flex">
     {% if session.get('user_id') %}
     <nav class="sidebar d-flex flex-column p-3">
-        <a href="/" class="text-dark text-decoration-none d-flex align-items-center gap-2 fs-5 fw-bold mb-4 px-2 pt-1">
-            <span class="brand-mark"><i class="bi bi-box-seam-fill"></i></span>
-            <span style="letter-spacing:0.5px;">MOLOGIX <small class="text-muted fw-normal fs-6">WMS</small></span>
+        <a href="{{ url_for('portal.dashboard') if session.get('role') == 'Client' else url_for('inventory.dashboard') }}" class="text-dark text-decoration-none d-flex align-items-center gap-2 fs-5 fw-bold mb-3 px-2 pt-1">
+            {% if brand.logo_url %}<img src="{{ brand.logo_url }}" alt="Logo" style="height:32px;width:32px;object-fit:contain;border-radius:8px;">{% else %}<span class="brand-mark"><i class="bi bi-box-seam-fill"></i></span>{% endif %}
+            <span>{{ brand.company_name }} <small class="text-muted fw-normal fs-6">{{ brand.company_tagline }}</small></span>
         </a>
-        <div class="text-uppercase text-muted fw-bold px-2 mb-2" style="font-size:0.7rem;letter-spacing:0.8px;">Operations Menu</div>
+
+        <!-- Back Button inside Sidebar (Appears automatically on sub-pages for both Admin & Client) -->
+        <div id="sidebarBackWrapper" class="mb-3" style="display:none;">
+            <a href="{{ url_for('portal.dashboard') if session.get('role') == 'Client' else url_for('inventory.dashboard') }}" class="back-sidebar-btn">
+                <i class="bi bi-arrow-left-circle-fill"></i>
+                <span>Back to Dashboard</span>
+            </a>
+        </div>
+
+        <div class="text-uppercase text-muted fw-bold px-2 mb-2" style="font-size:0.7rem;letter-spacing:0.8px;">
+            {{ 'Customer Portal' if session.get('role') == 'Client' else 'Operations Menu' }}
+        </div>
+
         <ul class="nav flex-column mb-auto">
-            
+            {% if session.get('role') == 'Client' %}
+                <li class="nav-item"><a href="{{ url_for('portal.dashboard') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-grid-1x2-fill"></i><span>Client Dashboard</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('portal.create_order') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-plus-circle-fill"></i><span>Place New Order</span></a></li>
+            {% else %}
+                <li class="nav-item"><a href="{{ url_for('inventory.dashboard') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-grid-1x2-fill"></i><span>Dashboard</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('inbound.supplier_list') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-building"></i><span>Suppliers</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('inbound.po_list') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-box-arrow-in-down"></i><span>Inbound (PO/GRN)</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('outbound.order_list') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-box-seam"></i><span>Outbound (Orders)</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('fleet.shipment_list') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-truck"></i><span>Fleet &amp; Logistics</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('inventory.stock_list') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-archive"></i><span>Live Inventory</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('inventory.adjust_stock') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-sliders"></i><span>Adjust Stock</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('enterprise.suite') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-stars text-danger"></i><span>Enterprise Suite</span></a></li>
+                <li class="nav-item"><a href="{{ url_for('enterprise.branding_settings') }}" class="nav-link d-flex align-items-center gap-2"><i class="bi bi-palette-fill"></i><span>White-Label Settings</span></a></li>
+            {% endif %}
         </ul>
+
         <div class="mt-auto pt-3 border-top">
             <a href="{{ url_for('auth.logout') }}" class="nav-link d-flex align-items-center gap-2 text-danger">
-                <i class="bi bi-box-arrow-left"></i><span>Sign Out</span>
+                <i class="bi bi-box-arrow-left"></i><span>Log Out</span>
             </a>
         </div>
     </nav>
@@ -46,7 +76,7 @@
         <header class="topbar d-flex justify-content-between align-items-center">
             <div class="search-box d-flex align-items-center gap-2">
                 <i class="bi bi-search text-muted"></i>
-                <input type="text" placeholder="Search SKU, Order ID, or Warehouse..." onkeyup="filterTables(this.value)">
+                <input type="text" placeholder="Search SKU, Order ID, or Tracking..." onkeyup="filterTables(this.value)">
             </div>
             <div class="d-flex align-items-center gap-3">
                 <span class="badge rounded-pill px-3 py-2" style="background:#fff1ed;color:#e85d3f;border:1px solid #ffd5cb;">
@@ -54,10 +84,10 @@
                 </span>
                 <div class="d-flex align-items-center gap-2">
                     <span class="rounded-circle d-inline-flex align-items-center justify-content-center fw-bold text-white" style="width:32px;height:32px;background:#1f2937;font-size:0.85rem;">
-                        {{ session.get('username', 'A')[0]|upper }}
+                        {{ session.get('username', 'U')[0]|upper }}
                     </span>
                     <div class="lh-1">
-                        <div class="fw-semibold small">{{ session.get('username', 'admin') }}</div>
+                        <div class="fw-semibold small">{{ session.get('username', 'user') }}</div>
                         <small class="text-muted" style="font-size:0.72rem;">Active Session</small>
                     </div>
                 </div>
@@ -65,15 +95,17 @@
         </header>
         {% endif %}
 
-        <main class="p-4">
+        <main class="{{ 'p-4' if session.get('user_id') else 'p-0' }}">
             {% with messages = get_flashed_messages(with_categories=true) %}
                 {% if messages %}
+                    <div class="{{ 'container mt-3' if not session.get('user_id') else '' }}">
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category }} alert-dismissible fade show rounded-3" role="alert">
                             {{ message }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
                     {% endfor %}
+                    </div>
                 {% endif %}
             {% endwith %}
 
@@ -83,9 +115,16 @@
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-document.querySelectorAll('.sidebar .nav-link').forEach(link => {
-    if (link.getAttribute('href') === window.location.pathname) link.classList.add('active');
+const curPath = window.location.pathname;
+const navLinks = document.querySelectorAll('.sidebar .nav-link');
+navLinks.forEach(link => {
+    if (link.getAttribute('href') === curPath) link.classList.add('active');
 });
+const homePath = navLinks.length > 0 ? navLinks[0].getAttribute('href') : '/';
+if (curPath !== homePath && curPath !== '/') {
+    const backBox = document.getElementById('sidebarBackWrapper');
+    if (backBox) backBox.style.display = 'block';
+}
 function filterTables(q) {
     q = q.toLowerCase();
     document.querySelectorAll('table tbody tr').forEach(tr => {

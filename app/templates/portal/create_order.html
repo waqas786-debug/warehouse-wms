@@ -1,56 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Place Order - Warehouse WMS</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm">
-        <div class="container">
-            <a class="navbar-brand fw-bold" href="/portal/dashboard">Warehouse WMS | Client Portal</a>
-            <div class="d-flex align-items-center">
-                <a href="/portal/dashboard" class="btn btn-outline-light btn-sm me-2">Back to Dashboard</a>
-                <a href="/auth/logout" class="btn btn-outline-danger btn-sm">Sign Out</a>
+{% extends 'base.html' %}
+{% block title %}Place Replenishment Order - {{ brand.company_name }}{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+    <div>
+        <h3 class="fw-bold mb-0">Place Replenishment Order</h3>
+        <small class="text-muted">Select commercial oil &amp; lubricant SKUs and submit directly to {{ brand.company_name }} dispatch queue</small>
+    </div>
+    <a href="{{ url_for('portal.dashboard') }}" class="btn btn-outline-secondary rounded-3 px-3 fw-semibold">
+        <i class="bi bi-arrow-left me-1"></i> Back to Portal
+    </a>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="wms-card p-4 p-md-5 h-100">
+            <div class="border-bottom pb-3 mb-4">
+                <h5 class="fw-bold mb-1"><i class="bi bi-cart-plus-fill text-danger me-2"></i>Create Customer Warehouse Order</h5>
+                <small class="text-muted">Choose lubricant grade, packaging unit, and required dispatch quantity</small>
             </div>
-        </div>
-    </nav>
-
-    <div class="container my-5">
-        <div class="row justify-content-center">
-            <div class="col-lg-6 col-md-8">
-                <div class="card shadow-sm border-0">
-                    <div class="card-header bg-primary text-white py-3 fw-bold">
-                        Create Customer Warehouse Order
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                <div class="row g-4">
+                    <div class="col-md-8">
+                        <label class="form-label fw-semibold text-dark">Select Catalog SKU &amp; Oil Grade</label>
+                        <select name="product_id" id="skuSelect" class="form-select form-select-lg rounded-3" onchange="updateOrderPreview()" required>
+                            {% for p in products %}
+                            <option value="{{ p.id }}"
+                                    data-sku="{{ p.sku }}"
+                                    data-name="{{ p.name }}"
+                                    data-uom="{{ p.uom.abbreviation if p.uom else 'DRUM' }}"
+                                    data-wt="{{ p.weight_kg or 0 }}">
+                                {{ p.sku }} &mdash; {{ p.name }} ({{ p.uom.abbreviation if p.uom else 'DRUM' }})
+                            </option>
+                            {% endfor %}
+                        </select>
                     </div>
-                    <div class="card-body p-4">
-                        <form method="POST">
-                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Select Catalog SKU</label>
-                                <select name="product_id" class="form-select" required>
-                                    {% for p in products %}
-                                        <option value="{{ p.id }}">{{ p.sku }} - {{ p.name }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
-                            <div class="mb-4">
-                                <label class="form-label fw-bold">Order Quantity</label>
-                                <input type="number" name="quantity" class="form-control" value="5" min="1" max="1000" required>
-                            </div>
-
-                            <div class="d-grid gap-2">
-                                <button type="submit" class="btn btn-success py-2 fw-semibold">Submit Order to Warehouse</button>
-                                <a href="/portal/dashboard" class="btn btn-light border py-2">Cancel</a>
-                            </div>
-                        </form>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold text-dark">Order Quantity</label>
+                        <input type="number" name="quantity" id="qtyInput" value="5" min="1" class="form-control form-control-lg rounded-3" oninput="updateOrderPreview()" required>
                     </div>
                 </div>
+                <div class="d-flex flex-wrap gap-3 mt-4 pt-4 border-top">
+                    <button type="submit" class="btn btn-accent btn-lg rounded-3 px-4 fw-semibold">
+                        <i class="bi bi-check2-circle me-1"></i> Submit Order to Warehouse
+                    </button>
+                    <a href="{{ url_for('portal.dashboard') }}" class="btn btn-light border btn-lg rounded-3 px-4 fw-semibold">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="wms-card p-4 h-100">
+            <h6 class="fw-bold border-bottom pb-3 mb-3"><i class="bi bi-clipboard-data text-danger me-2"></i>Live Order Summary</h6>
+            <div class="p-3 rounded-3 bg-light border mb-3">
+                <div class="small text-muted">Selected SKU</div>
+                <div class="fw-bold font-monospace fs-6" id="sumSku">{{ products[0].sku if products else 'OIL-SYN-5W30' }}</div>
+                <div class="small text-secondary mt-1" id="sumName">{{ products[0].name if products else 'Synthetic Engine Oil 5W-30' }}</div>
+                <hr class="my-2">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Packaging Unit:</span>
+                    <strong id="sumUom">{{ products[0].uom.abbreviation if products and products[0].uom else 'CAN' }}</strong>
+                </div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Order Quantity:</span>
+                    <strong id="sumQty">5</strong>
+                </div>
+                <div class="d-flex justify-content-between small">
+                    <span class="text-muted">Est. Shipment Weight:</span>
+                    <strong id="sumWeight">{{ ((products[0].weight_kg or 3.8) * 5)|round(1) if products else '19.0' }} kg</strong>
+                </div>
+            </div>
+            <div class="small text-muted">
+                <i class="bi bi-shield-check text-success me-1"></i> Direct allocation from <strong>{{ brand.company_name }}</strong> primary depot queue.
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+</div>
+
+<script>
+function updateOrderPreview() {
+    const sel = document.getElementById('skuSelect');
+    const opt = sel.options[sel.selectedIndex];
+    const qty = parseInt(document.getElementById('qtyInput').value) || 0;
+    const wt = parseFloat(opt.getAttribute('data-wt')) || 0;
+    document.getElementById('sumSku').innerText = opt.getAttribute('data-sku');
+    document.getElementById('sumName').innerText = opt.getAttribute('data-name');
+    document.getElementById('sumUom').innerText = opt.getAttribute('data-uom');
+    document.getElementById('sumQty').innerText = qty + ' ' + opt.getAttribute('data-uom');
+    document.getElementById('sumWeight').innerText = (wt * qty).toFixed(1) + ' kg';
+}
+</script>
+{% endblock %}

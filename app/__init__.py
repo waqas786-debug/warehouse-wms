@@ -25,9 +25,17 @@ def create_app(config_class=DevelopmentConfig):
     flask_app.register_blueprint(outbound_bp, url_prefix='/outbound')
     flask_app.register_blueprint(fleet_bp, url_prefix='/fleet')
     flask_app.register_blueprint(portal_bp, url_prefix='/portal')
+    from app.routes.enterprise import enterprise_bp
+    flask_app.register_blueprint(enterprise_bp)
 
     @flask_app.route('/')
     def root():
         return redirect(url_for('inventory.dashboard'))
+
+    
+    @flask_app.context_processor
+    def inject_brand():
+        from app.branding import get_brand
+        return {'brand': get_brand()}
 
     return flask_app

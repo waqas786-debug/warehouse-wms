@@ -1,0 +1,193 @@
+{% extends 'base.html' %}
+{% block title %}Enterprise Commercial Suite - MOLOGIX WMS{% endblock %}
+{% block content %}
+<style>
+    .tool-badge { background: #fff1ed; color: #e85d3f; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+    .barcode-bars {
+        height: 46px;
+        background: repeating-linear-gradient(90deg, #111 0px, #111 2px, #fff 2px, #fff 5px, #111 5px, #111 9px, #fff 9px, #fff 11px);
+    }
+    @media print {
+        .sidebar, .topbar, .no-print { display: none !important; }
+        .print-area { border: 2px solid #000 !important; box-shadow: none !important; }
+    }
+</style>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2 no-print">
+    <div>
+        <h3 class="fw-bold mb-0">Enterprise Commercial Suite</h3>
+        <small class="text-muted">Barcode Labeling, B2B Tax Invoicing, FEFO Batches, Courier AWB, Alerts &amp; Demand Forecasting</small>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('enterprise.export_csv') }}" class="btn btn-dark rounded-3 px-3 btn-sm fw-semibold">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Inventory CSV
+        </a>
+        <button onclick="window.print()" class="btn btn-accent rounded-3 px-3 btn-sm fw-semibold">
+            <i class="bi bi-printer me-1"></i> Print Labels / Invoice
+        </button>
+    </div>
+</div>
+
+<!-- Row 1: 4x6 Thermal Barcode Label Generator + B2B GST Invoice Generator -->
+<div class="row g-4 mb-4">
+    <!-- 1. Thermal Barcode Label -->
+    <div class="col-lg-6">
+        <div class="wms-card p-4 h-100 print-area">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-upc-scan me-2 text-danger"></i>4x6 Thermal Barcode &amp; Bin Label</h6>
+                <span class="tool-badge">Zebra / Thermal Ready</span>
+            </div>
+            <div class="mb-3 no-print">
+                <select id="labelSkuSelect" class="form-select form-select-sm rounded-3" onchange="updateBarcodeLabel()">
+                    {% for p in products %}
+                    <option value="{{ p.sku }}|{{ p.name }}">{{ p.sku }} - {{ p.name }}</option>
+                    {% else %}
+                    <option value="SKU-BARCODE-RDR|Industrial Barcode Scanner">SKU-BARCODE-RDR - Industrial Barcode Scanner</option>
+                    <option value="SKU-THERM-LBL|Thermal Label Roll 4x6">SKU-THERM-LBL - Thermal Label Roll 4x6</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="border border-2 border-dark rounded-3 p-3 bg-white">
+                <div class="d-flex justify-content-between border-bottom border-dark pb-2 mb-2">
+                    <span class="fw-bold">MOLOGIX WMS — WH-01</span>
+                    <span class="badge bg-dark">ZONE A / BIN-04</span>
+                </div>
+                <div class="fw-bold fs-5" id="lblName">{{ products[0].name if products else 'Industrial Barcode Scanner' }}</div>
+                <div class="text-muted small mb-2">Batch: LOT-2611-PK | QC: PASSED</div>
+                <div class="barcode-bars my-2"></div>
+                <div class="text-center fw-bold font-monospace small" id="lblSku">{{ products[0].sku if products else 'SKU-BARCODE-RDR' }}</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. B2B GST Tax Invoice -->
+    <div class="col-lg-6">
+        <div class="wms-card p-4 h-100 print-area">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-receipt me-2 text-danger"></i>Automated B2B GST Invoice</h6>
+                <span class="tool-badge">Finance &amp; Ledger</span>
+            </div>
+            <div class="row g-2 mb-3 no-print">
+                <div class="col-7">
+                    <select id="invOrderSelect" class="form-select form-select-sm rounded-3" onchange="updateInvoice()">
+                        {% for o in orders %}
+                        <option value="{{ o.order_number if o.order_number else 'ORD-' ~ o.id }}|{{ (o.items|length or 2) * 14500 }}">
+                            {{ o.order_number if o.order_number else 'ORD-' ~ o.id }} ({{ o.order_status }})
+                        </option>
+                        {% else %}
+                        <option value="ORD-261113092829|29000">ORD-261113092829 (Alpha Retailers Ltd)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-5">
+                    <select id="courierSelect" class="form-select form-select-sm rounded-3" onchange="updateInvoice()">
+                        <option value="TCS Express">TCS Express (PK)</option>
+                        <option value="Leopards Courier">Leopards Courier</option>
+                        <option value="PostEx COD">PostEx Logistics</option>
+                    </select>
+                </div>
+            </div>
+            <div class="p-3 rounded-3" style="background:#f9fafb;border:1px solid #e5e7eb;">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Invoice #:</span>
+                    <strong id="invNum">INV-{{ orders[0].id if orders else '1042' }}</strong>
+                </div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Client / Courier:</span>
+                    <strong id="invClient">Alpha Retailers Ltd • TCS Express</strong>
+                </div>
+                <div class="d-flex justify-content-between small mb-1">
+                    <span class="text-muted">Subtotal (PKR):</span>
+                    <span id="invSub">PKR 29,000</span>
+                </div>
+                <div class="d-flex justify-content-between small mb-2 pb-2 border-bottom">
+                    <span class="text-muted">GST (18%):</span>
+                    <span id="invTax">PKR 5,220</span>
+                </div>
+                <div class="d-flex justify-content-between fw-bold fs-6">
+                    <span>Grand Total:</span>
+                    <span style="color:#e85d3f;" id="invTotal">PKR 34,220</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Row 2: Batch / FEFO & 7-Day AI Demand Forecast Table -->
+<div class="wms-card overflow-hidden mb-4">
+    <div class="p-3 px-4 bg-white border-bottom d-flex justify-content-between align-items-center">
+        <h6 class="fw-bold mb-0"><i class="bi bi-graph-up-arrow me-2 text-danger"></i>FEFO Batch Tracking &amp; 7-Day Demand Forecast</h6>
+        <span class="tool-badge">Predictive Inventory</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0 small">
+            <thead class="table-light text-uppercase">
+                <tr>
+                    <th class="ps-4">SKU &amp; Product</th>
+                    <th>Active Lot / Batch</th>
+                    <th>FEFO Expiry</th>
+                    <th>Current Stock</th>
+                    <th>7-Day Forecast</th>
+                    <th>Reorder Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in forecast_rows %}
+                <tr>
+                    <td class="ps-4"><strong>{{ row.sku }}</strong><br><span class="text-muted">{{ row.name }}</span></td>
+                    <td><span class="badge text-bg-light border font-monospace">{{ row.batch }}</span></td>
+                    <td>{{ row.expiry }}</td>
+                    <td class="fw-bold">{{ row.stock }} units</td>
+                    <td>~{{ row.predicted_7d }} units/wk ({{ row.daily_rate }}/day)</td>
+                    <td>
+                        {% if row.days_left < 14 %}
+                        <span class="badge rounded-pill text-bg-danger">Auto-PO Triggered ({{ row.days_left }}d left)</span>
+                        {% else %}
+                        <span class="badge rounded-pill text-bg-success">Healthy ({{ row.days_left }}d cover)</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Row 3: Automated WhatsApp Dispatch Notification Preview -->
+<div class="wms-card p-4 no-print">
+    <div class="d-flex justify-content-between align-items-center mb-2">
+        <h6 class="fw-bold mb-0"><i class="bi bi-whatsapp me-2 text-success"></i>Automated Client WhatsApp &amp; Email Dispatch Alert</h6>
+        <button class="btn btn-sm btn-outline-success rounded-pill px-3" onclick="copyWhatsAppMsg()">
+            <i class="bi bi-clipboard-check me-1"></i> Copy Alert Payload
+        </button>
+    </div>
+    <p class="text-muted small mb-2">Triggered automatically when Outbound status changes to <strong>Dispatched</strong> or <strong>Delivered (POD)</strong>:</p>
+    <pre id="waPayload" class="p-3 rounded-3 mb-0 small" style="background:#f3f4f6;color:#1f2937;">📦 *MOLOGIX WMS Dispatch Alert*
+Dear *Alpha Retailers Ltd*, your order *{{ orders[0].order_number if orders and orders[0].order_number else 'ORD-261113092829' }}* has been dispatched via *TCS Express*.
+Track live status in your B2B Client Portal: https://yellomellow.pythonanywhere.com/portal</pre>
+</div>
+
+<script>
+function updateBarcodeLabel() {
+    const [sku, name] = document.getElementById('labelSkuSelect').value.split('|');
+    document.getElementById('lblSku').innerText = sku;
+    document.getElementById('lblName').innerText = name;
+}
+function updateInvoice() {
+    const [ord, subStr] = document.getElementById('invOrderSelect').value.split('|');
+    const courier = document.getElementById('courierSelect').value;
+    const sub = parseInt(subStr) || 29000;
+    const tax = Math.round(sub * 0.18);
+    const tot = sub + tax;
+    document.getElementById('invNum').innerText = 'INV-' + ord.slice(-4);
+    document.getElementById('invClient').innerText = 'Alpha Retailers Ltd • ' + courier;
+    document.getElementById('invSub').innerText = 'PKR ' + sub.toLocaleString();
+    document.getElementById('invTax').innerText = 'PKR ' + tax.toLocaleString();
+    document.getElementById('invTotal').innerText = 'PKR ' + tot.toLocaleString();
+}
+function copyWhatsAppMsg() {
+    navigator.clipboard.writeText(document.getElementById('waPayload').innerText);
+    alert('WhatsApp dispatch notification payload copied!');
+}
+</script>
+{% endblock %}

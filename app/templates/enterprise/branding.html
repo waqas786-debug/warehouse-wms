@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}White-Label Branding Settings - {{ brand.company_name }}{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <h3 class="fw-bold mb-0">White-Label Company &amp; Tax Settings</h3>
+        <small class="text-muted">Customize company name, logo, warehouse address, NTN/STRN, and GST invoice footer</small>
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="wms-card p-4">
+            <form method="POST" enctype="multipart/form-data">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token is defined else '' }}">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">Company / Brand Name</label>
+                        <input type="text" name="company_name" value="{{ brand.company_name }}" class="form-control rounded-3" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label small fw-semibold">System Subtitle / Tagline</label>
+                        <input type="text" name="company_tagline" value="{{ brand.company_tagline }}" class="form-control rounded-3">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">Upload Company Logo (PNG / JPG / SVG)</label>
+                        <input type="file" name="company_logo" accept=".png,.jpg,.jpeg,.webp,.svg" class="form-control rounded-3">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">Warehouse / Head Office Address</label>
+                        <input type="text" name="warehouse_address" value="{{ brand.warehouse_address }}" class="form-control rounded-3">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">Contact Phone</label>
+                        <input type="text" name="phone" value="{{ brand.phone }}" class="form-control rounded-3">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">NTN Number</label>
+                        <input type="text" name="ntn" value="{{ brand.ntn }}" class="form-control rounded-3">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label small fw-semibold">STRN (Sales Tax #)</label>
+                        <input type="text" name="strn" value="{{ brand.strn }}" class="form-control rounded-3">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label small fw-semibold">GST Invoice &amp; Dispatch Slip Footer</label>
+                        <textarea name="invoice_footer" rows="2" class="form-control rounded-3">{{ brand.invoice_footer }}</textarea>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-accent px-4 py-2 fw-semibold rounded-3">
+                        <i class="bi bi-check2-circle me-1"></i> Save White-Label Branding
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="wms-card p-4">
+            <h6 class="fw-bold mb-3">Live Invoice Header Preview</h6>
+            <div class="p-3 rounded-3 border bg-light">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    {% if brand.logo_url %}
+                    <img src="{{ brand.logo_url }}" style="height:36px;width:36px;object-fit:contain;">
+                    {% else %}
+                    <span class="brand-mark"><i class="bi bi-box-seam-fill"></i></span>
+                    {% endif %}
+                    <div>
+                        <div class="fw-bold">{{ brand.company_name }} <small class="text-muted">{{ brand.company_tagline }}</small></div>
+                        <div class="text-muted" style="font-size:0.75rem;">{{ brand.phone }}</div>
+                    </div>
+                </div>
+                <div class="small text-secondary mb-2">{{ brand.warehouse_address }}</div>
+                <div class="small"><strong>NTN:</strong> {{ brand.ntn }} | <strong>STRN:</strong> {{ brand.strn }}</div>
+                <hr class="my-2">
+                <div class="text-muted fst-italic" style="font-size:0.75rem;">{{ brand.invoice_footer }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,11 @@
+services:
+  wms-offline:
+    build: .
+    container_name: warehouse-wms-local
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./instance:/app/instance
+      - ./app/static/uploads:/app/app/static/uploads
+      - ./app/brand_settings.json:/app/app/brand_settings.json
+    restart: unless-stopped
