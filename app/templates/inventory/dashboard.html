@@ -1,64 +1,242 @@
-﻿{% extends 'base.html' %}
-{% block title %}Operations Dashboard - WMS{% endblock %}
+{% extends 'base.html' %}
+{% block title %}Operations Dashboard - Warehouse WMS{% endblock %}
 {% block content %}
-<h3 class="mb-4">Operational Performance Overview</h3>
-<div class="row g-3 mb-4">
-    <div class="col-md-4">
-        <div class="card text-white bg-primary shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="card-title text-uppercase">Total Catalog SKUs</h6>
-                <h2 class="fw-bold mb-0">{{ total_products }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-success shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="card-title text-uppercase">Active Facilities</h6>
-                <h2 class="fw-bold mb-0">{{ total_warehouses }}</h2>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card text-white bg-warning shadow-sm border-0">
-            <div class="card-body">
-                <h6 class="card-title text-uppercase">Low Stock Reorder Alerts</h6>
-                <h2 class="fw-bold mb-0">{{ low_stock_items }}</h2>
-            </div>
-        </div>
+<style>
+    .wh-pill { border-radius: 999px; padding: 8px 22px; font-weight: 600; font-size: 0.9rem; border: 1px solid #e2e8f0; background: #fff; color: #334155; }
+    .wh-pill.active { background: #15323d; color: #fff; border-color: #15323d; }
+    .zone-col { border: 1px solid #ecece6; border-radius: 16px; padding: 14px; background: #fcfcfa; }
+    .zone-col.featured { border: 1.5px solid #15323d; background: #ffffff; }
+    .bin-slot { border-radius: 10px; padding: 10px 4px; text-align: center; font-weight: 700; font-size: 0.8rem; }
+    .bin-green { background: #bce3c5; color: #164e2b; }
+    .bin-yellow { background: #fae5a5; color: #664d03; }
+    .bin-purple { background: #ccc9e7; color: #2e295c; }
+    .bin-blue { background: #b9d9eb; color: #163e56; }
+    .bin-empty { background: #f1f5f9; color: #94a3b8; border: 1px dashed #cbd5e1; }
+    .donut-ring {
+        width: 115px; height: 115px; border-radius: 50%;
+        background: conic-gradient(#f6d365 0% 62%, #f1f5f9 62% 100%);
+        display: flex; align-items: center; justify-content: center;
+    }
+    .donut-inner {
+        width: 82px; height: 82px; border-radius: 50%; background: #fff;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    .kpi-mini { background: #f9f9f6; border-radius: 16px; padding: 16px; border: 1px solid #ecece6; }
+    .kpi-icon { width: 34px; height: 34px; border-radius: 10px; background: #fff; border: 1px solid #e2e8f0; display: inline-flex; align-items: center; justify-content: center; }
+</style>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <h2 class="fw-bold mb-0">Warehouses ({{ total_warehouses }})</h2>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('inventory.stock_list') }}" class="btn btn-light border rounded-pill px-3 btn-sm fw-semibold">
+            <i class="bi bi-layers me-1"></i> Live Bin Stock
+        </a>
+        <a href="{{ url_for('inbound.po_list') }}" class="btn btn-dark rounded-pill px-3 btn-sm fw-semibold" style="background:#15323d;">
+            <i class="bi bi-plus-lg me-1"></i> New Inbound PO
+        </a>
     </div>
 </div>
-<div class="card shadow-sm border-0">
-    <div class="card-header bg-white py-3">
-        <h5 class="mb-0">Recent Stock Adjustments Audit</h5>
+
+<!-- Facility Filter Pills -->
+<div class="d-flex flex-wrap align-items-center gap-2 mb-4">
+    <span class="wh-pill active">Main Facility (WH-01)</span>
+    <span class="wh-pill">Cold & Secure Zone</span>
+    <span class="wh-pill">Dispatch Dock</span>
+    <a href="{{ url_for('inventory.adjust_stock') }}" class="btn btn-dark rounded-circle d-inline-flex align-items-center justify-content-center" style="width:36px;height:36px;background:#15323d;" title="Adjust Stock">
+        <i class="bi bi-plus"></i>
+    </a>
+</div>
+
+<div class="row g-4">
+    <!-- Left Column: Visual Section & Bin Grid + Audit Table -->
+    <div class="col-lg-8">
+        <div class="wms-card p-4 mb-4">
+            <div class="d-flex flex-wrap justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Section Overview (Storage Bins)</h5>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('inventory.adjust_stock') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">+ Adjust Stock</a>
+                    <a href="{{ url_for('outbound.order_list') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Outbound Queue</a>
+                </div>
+            </div>
+
+            <div class="row g-3">
+                <!-- Zone A -->
+                <div class="col-md-3 col-6">
+                    <div class="zone-col">
+                        <div class="d-flex justify-content-between small mb-2">
+                            <span class="fw-bold">A-Scanners</span><span class="text-muted">6/12</span>
+                        </div>
+                        <div class="row g-2">
+                            {% for i in range(1, 13) %}
+                            <div class="col-6">
+                                <div class="bin-slot {{ 'bin-green' if i in [2,5,6,7,12] else 'bin-empty' }}">A{{ i }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Zone B -->
+                <div class="col-md-3 col-6">
+                    <div class="zone-col featured">
+                        <div class="d-flex justify-content-between small mb-2">
+                            <span class="fw-bold">B-Labels</span><span class="text-muted">7/12</span>
+                        </div>
+                        <div class="row g-2">
+                            {% for i in range(1, 13) %}
+                            <div class="col-6">
+                                <div class="bin-slot {{ 'bin-yellow' if i in [1,3,6,7,8,9,12] else 'bin-empty' }}">B{{ i }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Zone C -->
+                <div class="col-md-3 col-6">
+                    <div class="zone-col">
+                        <div class="d-flex justify-content-between small mb-2">
+                            <span class="fw-bold">C-Packaging</span><span class="text-muted">8/12</span>
+                        </div>
+                        <div class="row g-2">
+                            {% for i in range(1, 13) %}
+                            <div class="col-6">
+                                <div class="bin-slot {{ 'bin-purple' if i in [2,3,5,6,7,10,11,12] else 'bin-empty' }}">C{{ i }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                <!-- Zone D -->
+                <div class="col-md-3 col-6">
+                    <div class="zone-col">
+                        <div class="d-flex justify-content-between small mb-2">
+                            <span class="fw-bold">D-Dispatch</span><span class="text-muted">7/12</span>
+                        </div>
+                        <div class="row g-2">
+                            {% for i in range(1, 13) %}
+                            <div class="col-6">
+                                <div class="bin-slot {{ 'bin-blue' if i in [1,4,5,6,7,10,11] else 'bin-empty' }}">D{{ i }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Stock Adjustments Audit Table -->
+        <div class="wms-card overflow-hidden">
+            <div class="p-3 px-4 bg-white border-bottom d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0">Recent Stock Adjustments Audit</h6>
+                <span class="badge rounded-pill text-bg-light border">Live Ledger</span>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light small text-uppercase">
+                        <tr>
+                            <th class="ps-4">Ref ID</th>
+                            <th>Warehouse ID</th>
+                            <th>Reason Code</th>
+                            <th>Approved By User</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for adj in adjustments %}
+                        <tr>
+                            <td class="ps-4 fw-semibold">#{{ adj.id }}</td>
+                            <td>WH-{{ adj.warehouse_id }}</td>
+                            <td><span class="badge rounded-pill text-bg-warning bg-opacity-25 text-dark">{{ adj.reason }}</span></td>
+                            <td>User #{{ adj.approved_by }}</td>
+                            <td class="text-muted small">{{ adj.created_at.strftime('%Y-%m-%d %H:%M') if adj.created_at else 'N/A' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">No stock adjustments logged yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
     </div>
-    <div class="card-body p-0">
-        <table class="table table-hover mb-0">
-            <thead class="table-light">
-                <tr>
-                    <th>Ref ID</th>
-                    <th>Warehouse ID</th>
-                    <th>Reason Code</th>
-                    <th>Approved By User</th>
-                    <th>Timestamp</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for adj in recent_adjustments %}
-                <tr>
-                    <td>#{{ adj.id }}</td>
-                    <td>WH-{{ adj.warehouse_id }}</td>
-                    <td><span class="badge bg-info text-dark">{{ adj.reason_code }}</span></td>
-                    <td>User #{{ adj.approved_by_user_id }}</td>
-                    <td>{{ adj.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="5" class="text-center py-3 text-muted">No audit adjustments on record.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <!-- Right Column: Section Usage Donut + 4 KPI Cards -->
+    <div class="col-lg-4">
+        <div class="wms-card p-4 mb-4">
+            <h6 class="fw-bold mb-3">Facility Bin Usage</h6>
+            <div class="d-flex align-items-center gap-4">
+                <div class="donut-ring flex-shrink-0">
+                    <div class="donut-inner">
+                        <span class="fw-bold fs-5">62%</span>
+                        <span class="text-muted" style="font-size:0.68rem;">Location Used</span>
+                    </div>
+                </div>
+                <div class="row g-2 flex-grow-1">
+                    <div class="col-6">
+                        <div class="fw-bold fs-5">48</div>
+                        <div class="text-muted small">Total Bins</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-bold fs-5">20</div>
+                        <div class="text-muted small">Empty Bins</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-bold fs-5">28</div>
+                        <div class="text-muted small">Active Bins</div>
+                    </div>
+                    <div class="col-6">
+                        <div class="fw-bold fs-5">{{ total_warehouses }}</div>
+                        <div class="text-muted small">Facilities</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wms-card p-4">
+            <h6 class="fw-bold mb-3">Inventory Overview</h6>
+            <div class="row g-3">
+                <div class="col-6">
+                    <div class="kpi-mini">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="kpi-icon"><i class="bi bi-upc-scan"></i></span>
+                            <span class="text-success small fw-bold">Active</span>
+                        </div>
+                        <div class="fw-bold fs-4">{{ total_products }}</div>
+                        <div class="text-muted small">Catalog SKUs</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="kpi-mini">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="kpi-icon"><i class="bi bi-building"></i></span>
+                            <span class="text-primary small fw-bold">Online</span>
+                        </div>
+                        <div class="fw-bold fs-4">{{ total_warehouses }}</div>
+                        <div class="text-muted small">Active Facilities</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="kpi-mini">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="kpi-icon"><i class="bi bi-exclamation-triangle text-warning"></i></span>
+                            <span class="text-warning small fw-bold">Alert</span>
+                        </div>
+                        <div class="fw-bold fs-4">{{ low_stock_items }}</div>
+                        <div class="text-muted small">Low Stock SKUs</div>
+                    </div>
+                </div>
+                <div class="col-6">
+                    <div class="kpi-mini">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <span class="kpi-icon"><i class="bi bi-journal-check"></i></span>
+                            <span class="text-success small fw-bold">Audit</span>
+                        </div>
+                        <div class="fw-bold fs-4">{{ adjustments|length }}</div>
+                        <div class="text-muted small">Adjustments</div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 {% endblock %}
